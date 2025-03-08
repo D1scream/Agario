@@ -1,22 +1,15 @@
-# import asyncio
-# from WebSocketClient import WebSocketClient
-
-# client = WebSocketClient("ws://localhost:8765",nickname="second")
-# asyncio.run(client.main())
-# print("Client One started")
-
+import asyncio
+import asyncio
+import websockets
+import json
 
 import pygame
-import random
 import math
+
 
 WIDTH, HEIGHT = 1280, 720
 
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("ChunChunMaru Client 1")
-clock = pygame.time.Clock()
-#MASS_FOR_EAT_PLAYER = 0.8
+
 class Keyset():
     def __init__(self, key_up , key_down, key_left, key_right, key_division):
         self.action_up_ = key_up
@@ -62,16 +55,23 @@ class Player:
     def radius(self):
         return math.sqrt(self.score)
 
-    def move(self):
+    async def SendDirection(self, direction):
+        await client.custom_send_message( {"direction" : [direction.x,direction.y], "division": False })
+
+    async def move(self):
         keys = pygame.key.get_pressed()
         direction = self.controller_.get_moving_vector(keys)
 
+        await self.SendDirection(direction)
+
         if direction.length() > 0:
             direction = direction.normalize() * self.speed() 
-        #send to websocket direction
         self.pos_ += direction
 
+    async def send_division(self):
+        await client.custom_send_message({"direction" : self.direction, "division" : True})
     def division(self):
+        self.send_division()
         if self.score < 400 or self.division_ban_timer_!=0:
             return  
 
@@ -94,7 +94,7 @@ class Player:
         self.collision_active_timer_=1100000
         return part
 
-    def draw(self):
+    def draw(self,screen):
         pygame.draw.circle(screen, self.color_, (int(self.pos_.x), int(self.pos_.y)), self.radius())
     
     def check_food(self,food_list):
@@ -105,23 +105,9 @@ class Player:
                 #food_list.append(Food())
             food.draw()
 
-    # def check_player_eat(self, player_list):
-    #     for player in player_list:
-    #         mass_to_eat = MASS_FOR_EAT_PLAYER
-    #         if(player != self and player.nickname==self.nickname):
-    #             mass_to_eat = 1
-    #         if(self.score * mass_to_eat > player.score ):
-    #             distance = ((self.pos_.x - player.pos_.x)**2 + (self.pos_.y - player.pos_.y)**2)**0.5
-    #             if(distance < self.radius()*0.8):
-    #                 print(f"Dead by {self}" )
-    #                 self.score += player.score
-    #                 player_list.remove(player)
-            
-
     def check_division(self, player_list):
         keys = pygame.key.get_pressed()
         if(self.controller_.get_division(keys = keys)):
-            #Send_message
             new_part = self.division()
             if(new_part):
                 player_list.append(new_part)
@@ -129,13 +115,14 @@ class Player:
     def __str__(self):
         return self.nickname
     
-    def update(self):
-        #Вот тут пиздец 
+    async def update(self, screen):
         self.acceleration = max(self.acceleration - (1 / 10), 1)
         self.collision_active_timer_ = max(0,self.collision_active_timer_ - (1/60))
         self.division_ban_timer_ = max(0,self.division_ban_timer_ - (1/60))
-        self.move()
-        self.draw()
+        await self.move()
+
+        self.draw(screen)
+
 
 class Food:
     def __init__(self,x,y):
@@ -144,7 +131,7 @@ class Food:
         self.radius_ = 5
         self.color_ = (255, 0, 0)
     
-    def draw(self):
+    def draw(self,screen):
         pygame.draw.circle(screen, self.color_, (self.x_, self.y_), self.radius_)
     
     def check_eated(self, player : Player):
@@ -159,48 +146,49 @@ class Field:
         self.HEIGHT_=HEIGHT
         #Получить данные из вебсокета
         self.players_list = []
-        self.food_list = [Food() for _ in range(FOOD_COUNT)]
+        self.food_list = []
         
-    def update(self):
-        # field.players_list.sort(key=lambda player: player.score)
+    async def update(self, screen):
         for player in self.players_list:
             self.check_boundaries(player)
             player.check_food(self.food_list)
-            player.check_player_eat(self.players_list)
             player.check_division(self.players_list)
-            player.update()
-        
+            await player.update(screen)
+
     def check_boundaries(self, player):
         player.pos_.x = max(player.radius(), min(self.WIDTH_ - player.radius(), player.pos_.x))
         player.pos_.y = max(player.radius(), min(self.HEIGHT_ - player.radius(), player.pos_.y))
 
-def CreateField():
-    field = Field(WIDTH,HEIGHT)
-    player_wasd_keyset = Keyset(
-        key_up = pygame.K_w,
-        key_down = pygame.K_s,
-        key_left = pygame.K_a,
-        key_right = pygame.K_d,
-        key_division = pygame.K_SPACE
-        )
-    
-    controllerWASD = Controller(player_wasd_keyset)
-    #send message for create user
-    #get player Data
-    player1 = Player(controller = controllerWASD, nickname="Its my Life!", color = (0, 0, 255))
-    field.players_list.append(player1)
-    return field
 
-if __name__ == "__main__":
+async def start_game():
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("ChunChunMaru Client 1")
+    clock = pygame.time.Clock()
+
+
+    def CreateField():
+        field = Field(WIDTH,HEIGHT)
+        player_wasd_keyset = Keyset(
+            key_up = pygame.K_w,
+            key_down = pygame.K_s,
+            key_left = pygame.K_a,
+            key_right = pygame.K_d,
+            key_division = pygame.K_SPACE
+            )
+        
+        controllerWASD = Controller(player_wasd_keyset)
+        player1 = Player(controller = controllerWASD, nickname="Its my Life!", color = (0, 0, 255))
+        field.players_list.append(player1)
+        return field
+
     field = CreateField()
     running = True
     while running:
         
-        # if(len(field.players_list)==1):
-        #     field = CreateField()
         screen.fill((255, 255, 255))
 
-        field.update()
+        await field.update(screen)
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -208,3 +196,44 @@ if __name__ == "__main__":
         
         clock.tick(60)
     pygame.quit()
+
+class WebSocketClient:
+    def __init__(self, uri):
+        self.uri = uri
+        self.websocket_ = None
+
+    async def receive_messages(self):
+        while True:
+            print("get")
+            try:
+                print("get2")
+                response = await self.websocket_.recv()
+                print("get3")
+                data = json.loads(response)
+                players_field = data.get("player_list")
+                food_list = data.get("food_list")
+                print("Received players: ", len(players_field))
+                print("Received food:", len(food_list))
+
+            except Exception as e:
+                print(f"Error receiving message: {e}")
+                pass
+
+    async def send_message(self, json_message):
+        await client.websocket_.send(json_message)
+
+    async def custom_send_message(self, message):
+        json_message = json.dumps(message)
+        await self.send_message( json_message)
+
+    async def main(self):
+        websocket = await websockets.connect(self.uri)
+        self.websocket_ = websocket
+        message = {"message": "Someone is HERE"}
+        await self.custom_send_message( message)
+        receive_task = asyncio.create_task(self.receive_messages())
+        start_game_task = asyncio.create_task(start_game())
+        await asyncio.gather(receive_task, start_game_task)
+
+client = WebSocketClient("ws://localhost:8765")
+asyncio.run(client.main())

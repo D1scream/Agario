@@ -157,13 +157,13 @@ class Field:
         self.food_list = [Food() for _ in range(FOOD_COUNT)]
         
     def update(self):
-        field.players_list.sort(key=lambda player: player.score)
         for player in self.players_list:
             self.check_boundaries(player)
             player.check_food(self.food_list)
             player.check_player_eat(self.players_list)
             player.check_division(self.players_list)
             player.update()
+        field.players_list.sort(key=lambda player: player.score)
         
     def check_boundaries(self, player):
         player.pos_.x = max(player.radius(), min(self.WIDTH_ - player.radius(), player.pos_.x))
