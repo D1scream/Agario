@@ -40,37 +40,40 @@ class Controller:
 
 class Player:
     def __init__(self, controller, nickname, color):
-        self.parts = []
-        self.collision_active_timer_ = 0
+        self.collision_active_timer_ = 1
+        self.division_ban_timer_ = 0.01
         self.nickname = nickname
         self.controller_ = controller
         self.pos_ = pygame.math.Vector2(WIDTH // 2, HEIGHT // 2)
-        self.radius_ = 20
+        self.score = 1000
         self.color_ = color
         self.acceleration = 1
 
     def speed(self):
-        print(math.log(self.radius_**2))
-        return 30 / math.log(self.radius_**2) * self.acceleration
+        return 20 / math.log(self.score) * self.acceleration
+    
+    def radius(self):
+        return math.sqrt(self.score)
 
     def move(self):
-        
         keys = pygame.key.get_pressed()
         direction = self.controller_.get_moving_vector(keys)
 
         if direction.length() > 0:
-            direction = direction.normalize() * self.speed()
+            direction = direction.normalize() * self.speed() 
 
         self.pos_ += direction
-    
-    def division(self, player_list):
-        if self.radius_ < 20 or self.divide_ban!=0:
+        
+    def division(self):
+        print(f"you tried {self.division_ban_timer_}")
+        if self.score < 400 or self.division_ban_timer_!=0:
+            print("ban to divide")
             return  
 
         part = Player(self.controller_, self.nickname, self.color_)
         
-        part.radius_ = math.sqrt(self.radius_ ** 2 / 2)
-        self.radius_ = math.sqrt(self.radius_ ** 2 / 2)
+        part.score = self.score / 2
+        self.score = self.score / 2
 
         keys = pygame.key.get_pressed()
         direction = self.controller_.get_moving_vector(keys)
@@ -78,18 +81,16 @@ class Player:
         if direction.length() == 0:
             direction = pygame.math.Vector2(random.uniform(-1, 1), random.uniform(-1, 1)).normalize()
 
-        part.pos_ = self.pos_ + direction * (self.radius_ + part.radius_ + 5)
-
+        part.pos_ = self.pos_ + direction * (self.radius() + part.radius() + 10)
+ 
         part.acceleration = 3  
-
-        self.parts.append(part)
-        part.parts.append(self)
-
+        part.division_ban_timer_ = 0.1
+        self.division_ban_timer_ = 0.1
         self.collision_active_timer_=1100000
-        player_list.append(part)
+        return part
 
     def draw(self):
-        pygame.draw.circle(screen, self.color_, (int(self.pos_.x), int(self.pos_.y)), self.radius_)
+        pygame.draw.circle(screen, self.color_, (int(self.pos_.x), int(self.pos_.y)), self.radius())
     
     def check_food(self,food_list):
         for food in food_list:
@@ -100,51 +101,23 @@ class Player:
 
     def check_player_eat(self, player_list):
         for player in player_list:
-            if(self.radius_** 2 * MASS_FOR_EAT_PLAYER > player.radius_ ** 2):
+            mass_to_eat = MASS_FOR_EAT_PLAYER
+            if(player != self and player.nickname==self.nickname):
+                mass_to_eat = 1
+            if(self.score * mass_to_eat > player.score ):
                 distance = ((self.pos_.x - player.pos_.x)**2 + (self.pos_.y - player.pos_.y)**2)**0.5
-                if(distance < self.radius_*0.8):
-                    player.eated(self,player_list)
+                if(distance < self.radius()*0.8):
+                    print(f"Dead by {self}" )
+                    self.score += player.score
+                    player_list.remove(player)
+            
 
     def check_division(self, player_list):
         keys = pygame.key.get_pressed()
         if(self.controller_.get_division(keys = keys)):
-            self.division(player_list)
-
-    def check_collision(self):
-        if(self.collision_active_timer_!=0):
-            for part in self.parts:
-                distance = ((self.pos_.x - part.pos_.x)**2 + (self.pos_.y - part.pos_.y)**2)**0.5
-                if(distance<=self.radius_+part.radius_):
-                    return True
-                return False
-
-    def resolve_collision(self, other_circle):
-        # Вектор от центра одного круга к другому
-        normal = other_circle.pos - self.pos
-        normal_length = normal.length()
-
-        # Нормализуем вектор нормали
-        normal.normalize_ip()
-
-        # Отражение скорости вдоль нормали
-        relative_velocity = self.speed - other_circle.speed
-        speed_along_normal = relative_velocity.dot(normal)
-
-        # Если скорость вдоль нормали отрицательная (круги приближаются), выполняем отражение
-        if speed_along_normal < 0:
-            return
-
-        # Массируем момент столкновения
-        restitution = 1  # Коэффициент восстановления (1 — идеальный отскок)
-            # Скорости отражаются относительно нормали
-        impulse = 2 * speed_along_normal / (self.radius + other_circle.radius)
-        self.speed -= impulse * other_circle.radius * normal
-        other_circle.speed += impulse * self.radius * normal
-
-    def eated(self, player, player_list):
-        print(f"Dead by {player}" )
-        player.radius_ += self.radius_**0.5
-        player_list.remove(self)
+            new_part = self.division()
+            if(new_part):
+                player_list.append(new_part)
 
     def __str__(self):
         return self.nickname
@@ -152,6 +125,7 @@ class Player:
     def update(self):
         self.acceleration = max(self.acceleration - (1 / 10), 1)
         self.collision_active_timer_ = max(0,self.collision_active_timer_ - (1/60))
+        self.division_ban_timer_ = max(0,self.division_ban_timer_ - (1/60))
         self.move()
         self.draw()
 
@@ -166,8 +140,8 @@ class Food:
         pygame.draw.circle(screen, self.color_, (self.x_, self.y_), self.radius_)
     
     def check_eated(self, player : Player):
-        if (self.x_ - player.pos_.x) ** 2 + (self.y_ - player.pos_.y) ** 2 < (self.radius_ + player.radius_*0.9) ** 2:
-            player.radius_+=0.5
+        if (self.x_ - player.pos_.x) ** 2 + (self.y_ - player.pos_.y) ** 2 < (self.radius_ + player.radius()*0.9) ** 2:
+            player.score+=50
             return True
         return False
     
@@ -183,7 +157,7 @@ class Field:
         self.food_list = [Food() for _ in range(FOOD_COUNT)]
         
     def update(self):
-        field.players_list.sort(key=lambda player: player.radius_)
+        field.players_list.sort(key=lambda player: player.score)
         for player in self.players_list:
             self.check_boundaries(player)
             player.check_food(self.food_list)
@@ -192,8 +166,8 @@ class Field:
             player.update()
         
     def check_boundaries(self, player):
-        player.pos_.x = max(player.radius_, min(self.WIDTH_ - player.radius_, player.pos_.x))
-        player.pos_.y = max(player.radius_, min(self.HEIGHT_ - player.radius_, player.pos_.y))
+        player.pos_.x = max(player.radius(), min(self.WIDTH_ - player.radius(), player.pos_.x))
+        player.pos_.y = max(player.radius(), min(self.HEIGHT_ - player.radius(), player.pos_.y))
 
 def CreateField():
     field = Field(WIDTH,HEIGHT)
@@ -226,16 +200,6 @@ def CreateField():
     return field
 
 if __name__ == "__main__":
-    # for i in map(lambda x: x/10.0, range(10, 200, 1)):  
-    #     l = []
-    #     for j in map(lambda x: x/10.0, range(10, 200, 1)):
-    #         if (i ** 2 * MASS_FOR_EAT_PLAYER > j ** 2):
-    #             l.append((i, j))
-    #     if len(l) > 1:
-    #         print(l[0], l[-1])
-    #     l.clear()
-    # exit()
-    
     field = CreateField()
     running = True
     while running:
