@@ -1,6 +1,6 @@
 import json
 from GlobalConstants import HEIGHT, WIDTH
-from Player import Player
+from Player import Unit
 from Food import Food
 class FoodListModel:
     def __init__(self, food_list: list[Food]):
@@ -18,7 +18,7 @@ class FoodListModel:
         return cls(foods)
 
 class PlayersListModel:
-    def __init__(self, players_list: list[Player]):
+    def __init__(self, players_list: list[Unit]):
         self.players_list_ = players_list
 
     def to_json(self):
@@ -31,3 +31,16 @@ class PlayersListModel:
         for player_data in data:
             players.append(player_class(**player_data))
         return cls(players)
+    
+class User:
+    def __init__(self, nickname):
+        self.nickname=nickname
+        self.connection = None
+
+    def serialize(self):
+        return json.dumps({"nickname": self.nickname})
+
+    @classmethod
+    def deserialize(cls, json_data: str):
+        data = json.loads(json_data)
+        return cls(nickname=data["nickname"])

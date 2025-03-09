@@ -2,8 +2,8 @@ import math
 import pygame
 
 from GlobalConstants import WIDTH, HEIGHT, MASS_FOR_EAT_PLAYER
-class Player:
-    def __init__(self, nickname, color, id = -1):
+class Unit:
+    def __init__(self, nickname, color, id):
         self.direction_ = pygame.math.Vector2(0, 0)
         self.collision_active_timer_ = 1
         self.division_ban_timer_ = 0.01
@@ -13,6 +13,7 @@ class Player:
         self.color_ = color
         self.acceleration = 1
         self.id_ = id
+        self.division_flag = False
 
     def speed(self):
         return 20 / math.log(self.score) * self.acceleration
@@ -30,7 +31,7 @@ class Player:
     def division(self, player_list):
         if self.score < 400 or self.division_ban_timer_!=0:
             return  
-        part = Player(self.nickname, self.color_)
+        part = Unit(self.nickname, self.color_, id = self.id_)
         
         part.score = self.score / 2
         self.score = self.score / 2
@@ -41,22 +42,23 @@ class Player:
         part.pos_ = self.pos_ + direction * (self.radius() + part.radius() + 10)
  
         part.acceleration = 3  
-        part.division_ban_timer_ = 0.1
-        self.division_ban_timer_ = 0.1
+        part.division_ban_timer_ = 1
+        self.division_ban_timer_ = 1
         self.collision_active_timer_=1100000
         player_list.append(part)
+        return part
     
 
-    def check_player_eat(self, player_list):
-        for player in player_list:
-            mass_to_eat = MASS_FOR_EAT_PLAYER
-            if(player != self and player.nickname==self.nickname):
-                mass_to_eat = 1
-            if(self.score * mass_to_eat > player.score ):
-                distance = ((self.pos_.x - player.pos_.x)**2 + (self.pos_.y - player.pos_.y)**2)**0.5
-                if(distance < self.radius()*0.8):
-                    self.score += player.score
-                    player_list.remove(player)
+    def check_player_eat(self, player):
+        mass_to_eat = MASS_FOR_EAT_PLAYER
+        if(player != self and player.id_==self.id_):
+            mass_to_eat = 1
+        if(self.score * mass_to_eat > player.score ):
+            distance = ((self.pos_.x - player.pos_.x)**2 + (self.pos_.y - player.pos_.y)**2)**0.5
+            if(distance < self.radius()*0.8):
+                return True
+        return False
+                
             
     def __str__(self):
         return self.nickname
@@ -79,12 +81,12 @@ class Player:
     
     def load_data(self, direction, division):
         self.direction_ = pygame.math.Vector2(direction[0],direction[1])
-        if(division):
-            self.division()
-            
+        if(not self.division_flag):
+            self.division_flag = division
+
     def update(self):
         self.acceleration = max(self.acceleration - (1 / 10), 1)
         self.collision_active_timer_ = max(0,self.collision_active_timer_ - (1/60))
         self.division_ban_timer_ = max(0,self.division_ban_timer_ - (1/60))
-        
         self.move()
+        
