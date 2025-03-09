@@ -108,6 +108,11 @@ class Unit:
 
         def draw(self,screen):
             pygame.draw.circle(screen, self.color_, (int(self.pos_.x), int(self.pos_.y)), self.radius())
+            font = pygame.font.Font(None, int(self.radius()*4/len(self.nickname))) 
+            text_surface = font.render(self.nickname, True, (255, 255, 255))  
+            text_rect = text_surface.get_rect(center=(int(self.pos_.x), int(self.pos_.y)))
+            
+            screen.blit(text_surface, text_rect)
         
         async def update(self):
             self.acceleration = max(self.acceleration - (1 / 10), 1)
@@ -126,7 +131,7 @@ class Controlled_Unit(Unit):
     async def move(self):
         keys = pygame.key.get_pressed()
         direction = self.controller_.get_moving_vector(keys)
-
+        self.direction_ = direction
         await self.SendDirection(direction)
 
         if direction.length() > 0:
@@ -207,7 +212,6 @@ class Field:
                 await player_unit.move()
                 await player_unit.check_division()
                 
-
             self.check_boundaries(unit)
             for food in self.food_list:
                 if(food.check_eated(unit)):
