@@ -1,151 +1,52 @@
 import asyncio
 import websockets
 import json
-
+from Models import FoodListModel,PlayersListModel
 import pygame
 import random
 import math
 
-
-WIDTH, HEIGHT = 1280, 720
+from Food import Food
+from Player import Player
+from GlobalConstants import WIDTH, HEIGHT
 
 pygame.init()
 clock = pygame.time.Clock()
-MASS_FOR_EAT_PLAYER = 0.8
-    
-class Player:
-    def __init__(self, nickname, color):
-        self.direction_ = (0,0)
-        self.collision_active_timer_ = 1
-        self.division_ban_timer_ = 0.01
-        self.nickname = nickname
-        self.pos_ = pygame.math.Vector2(WIDTH // 2, HEIGHT // 2)
-        self.score = 1000
-        self.color_ = color
-        self.acceleration = 1
 
-    def speed(self):
-        return 20 / math.log(self.score) * self.acceleration
-    
-    def radius(self):
-        return math.sqrt(self.score)
-
-    def move(self):
-        direction = self.direction_
-        if direction.length() > 0:
-            direction = direction.normalize() * self.speed() 
-
-        self.pos_ += direction
-        
-    def division(self, player_list):
-        if self.score < 400 or self.division_ban_timer_!=0:
-            return  
-        part = Player(self.nickname, self.color_)
-        
-        part.score = self.score / 2
-        self.score = self.score / 2
-        direction = self.direction_
-        if direction.length() == 0:
-            direction = pygame.math.Vector2(1,1).normalize()
-
-        part.pos_ = self.pos_ + direction * (self.radius() + part.radius() + 10)
- 
-        part.acceleration = 3  
-        part.division_ban_timer_ = 0.1
-        self.division_ban_timer_ = 0.1
-        self.collision_active_timer_=1100000
-        player_list.append(part)
-    
-    def check_food(self,food_list):
-        for food in food_list:
-            if(food.check_eated(self)):
-                food_list.remove(food)
-                food_list.append(Food())
-
-    def check_player_eat(self, player_list):
-        for player in player_list:
-            mass_to_eat = MASS_FOR_EAT_PLAYER
-            if(player != self and player.nickname==self.nickname):
-                mass_to_eat = 1
-            if(self.score * mass_to_eat > player.score ):
-                distance = ((self.pos_.x - player.pos_.x)**2 + (self.pos_.y - player.pos_.y)**2)**0.5
-                if(distance < self.radius()*0.8):
-                    self.score += player.score
-                    player_list.remove(player)
-            
-    def __str__(self):
-        return self.nickname
-    
-    def __dict__(self):
-        return {
-            "direction": self.direction_,
-            "collision_active_timer": self.collision_active_timer_,
-            "division_ban_timer": self.division_ban_timer_,
-            "nickname": self.nickname,
-            "pos_x": self.pos_.x,
-            "pos_y": self.pos_.y,
-            "score": self.score,
-            "color": list(self.color_),
-            "acceleration": self.acceleration
-        }
-
-
-    def load_data(self, direction, division):
-        self.direction_ = direction
-        if(division):
-            self.division()
-            
-    def update(self):
-        self.acceleration = max(self.acceleration - (1 / 10), 1)
-        self.collision_active_timer_ = max(0,self.collision_active_timer_ - (1/60))
-        self.division_ban_timer_ = max(0,self.division_ban_timer_ - (1/60))
-        
-        self.move()
-    
-
-class Food:
-    def __init__(self):
-        self.x_ = random.randint(10, WIDTH - 10)
-        self.y_ = random.randint(10, HEIGHT - 10)
-        self.radius_ = 5
-        self.color_ = (255, 0, 0)
-    
-    def check_eated(self, player : Player):
-        if (self.x_ - player.pos_.x) ** 2 + (self.y_ - player.pos_.y) ** 2 < (self.radius_ + player.radius()*0.9) ** 2:
-            player.score+=50
-            return True
-        return False
-
-    @property
-    def __dict__(self):
-        return {
-            "x": self.x_,
-            "y": self.y_,
-            "radius": self.radius_,
-            "color": list(self.color_)
-        }
 
 class Field:
     def __init__(self, WIDTH, HEIGHT, FOOD_COUNT = 50):
         self.WIDTH_=WIDTH
         self.HEIGHT_=HEIGHT
-
         self.players_list = []
         self.food_list = [Food() for _ in range(FOOD_COUNT)]
-        
+    
+    def check_food(self, player:Player):
+        for food in self.food_list:
+            if(food.check_eated(player)):
+                self.food_list.remove(food)
+                self.food_list.append(Food())
+
+
     def update(self):
         self.players_list.sort(key=lambda player: player.score)
+        disconnected_players = [player for player in self.players_list if player not in clients_players_dict.values()]
+
+        for player in disconnected_players:
+            self.players_list.remove(player)
+            print(f"Removed disconnected player: {player.nickname}")
+
         for player in self.players_list:
             self.check_boundaries(player)
-            player.check_food(self.food_list)
+            self.check_food(player)
             player.check_player_eat(self.players_list)
-            player.check_division(self.players_list)
             player.update()
 
     def check_new_clients(self):
         for nc in clients:
             if nc not in clients_players_dict:
                 self.add_new_player(nc)
+                print(f"nc {nc}")
         
     def check_boundaries(self, player):
         player.pos_.x = max(player.radius(), min(self.WIDTH_ - player.radius(), player.pos_.x))
@@ -165,59 +66,84 @@ async def create_field(clients):
     return field
 
 
-async def send_message(message):
+async def send_message(websocket, message):
+    json_message = json.dumps(message)
+    try:
+        #print(f"sended {json_message}")
+        await websocket.send(json_message)
+        #print(f"sended {json_message}")
+    except websockets.exceptions.ConnectionClosed:
+        print("Client disconnected bubububu")
+
+async def send_message_to_all(message):
     json_message = json.dumps(message)
     try:
         for client in list(clients):
             try:
                 #print(f"sended {json_message}")
                 await client.send(json_message)
+                #print(f"sended {json_message}")
             except websockets.exceptions.ConnectionClosed:
-                print("Client disconnected")
+                print("Client disconnected And now SomeOneHaveToBeDeleted")
                 clients.discard(client)
                 clients_players_dict.pop(client, None)
-    except:
-        print("Error in send")
+                print("SomeOne Was Deleted")
+    except Exception as e:
+        print(f"Error in send {e}")
     #await asyncio.sleep(1 / 60)
 
 async def send_game_state(field):
     while True:
-        if len(field.players_list) == 1:
-            field = await create_field(clients)
-        field.update()
-        food_data = [food.__dict__ for food in field.food_list]
-        players_data = [player.__dict__ for player in field.players_list]
-        data = {"player_list": players_data, "food_list": food_data}
+        # if len(field.players_list) == 1:
+        #     field = await create_field(clients)
+        
+        players_data = PlayersListModel(field.players_list)
+        food_data = FoodListModel(field.food_list)
+        data = {"player_list": players_data.to_json(), "food_list": food_data.to_json()}
 
-        await send_message(data)
+        field.check_new_clients()
+        print(players_data.to_json())
+        field.update()
+        await send_message_to_all(data)
+        print()
         await asyncio.sleep(1/60)
+        
 
 clients = set()
 
-def check_new_players(field : Field):
-    for client in clients:
-        if client not in clients_players_dict:
-            field.add_new_player(client)
-
-
-def start_game():
-    field = create_field(clients)
-    running = False
+async def start_game():
+    print("Game Started")
+    field = await create_field(clients)
+    running = True
     while running:
-        if(len(field.players_list)==1):
-            field = create_field(clients)
-        field.update()
-        send_game_state(player_list = field.players_list, food_list = field.food_list)
-        check_new_players(field)
-        clock.tick(60)
+        await send_game_state(field)
+        
+async def remove_player(websocket):
+    """Удаление игрока при отключении"""
+    if websocket in clients:
+        clients.remove(websocket)
+    
+    if websocket in clients_players_dict:
+        clients_players_dict.pop(websocket, None)
+        
+
 
 async def echo(websocket, path=""):
     clients.add(websocket)
-    check_new_players
     try:
         async for message in websocket:
             try:
                 data = json.loads(message)
+                 # Проверяем, есть ли поле 'getPlayerId' в данных
+                if "getPlayerId" in data:
+                    # Проверяем, что websocket есть в clients_players_dict
+                    if websocket in clients_players_dict:
+                        # Отправляем ID игрока
+                        player = clients_players_dict[websocket]
+                        await send_message(websocket, {"player_id": player.id_})
+                    else:
+                        print(f"WebSocket {websocket} не найден в clients_players_dict.")
+                #print(data)
                 try:
                     direction = data.get("direction") 
                     division = data.get("division")
@@ -230,19 +156,15 @@ async def echo(websocket, path=""):
                 except Exception as e:
                     print(f"{e} Error")
                 
-                #print(f"Received: {data}")
             except json.JSONDecodeError:
                 await websocket.send('Error: Invalid JSON')
     except websockets.exceptions.ConnectionClosed:
-        print("connection closed")
-        pass
-    finally:
-        clients.discard(websocket)
-        clients_players_dict.pop(websocket, None)
+        print("Client disconnected")
+        await remove_player(websocket)
+
 
 async def main():
-    field = await create_field(clients)
-    asyncio.create_task(send_game_state(field)) 
+    asyncio.create_task(start_game()) 
     server = await websockets.serve(echo, "localhost", 8765)
     await server.wait_closed()
 

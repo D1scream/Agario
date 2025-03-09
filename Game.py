@@ -2,8 +2,7 @@ import numpy as np
 import pygame
 import random
 import math
-
-WIDTH, HEIGHT = 1280, 720
+from GlobalConstants import WIDTH, HEIGHT 
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -18,7 +17,7 @@ class Keyset():
         self.action_right_ = key_right
         self.action_division_ = key_division
 
-class Controller:
+class Control:
     def __init__(self, keyset : Keyset):
         self.keyset_ = keyset
 
@@ -187,8 +186,8 @@ def CreateField():
         key_division = pygame.K_RSHIFT
         )
     
-    controllerWASD = Controller(player_wasd_keyset)
-    controllerARROWS = Controller(player_arrows_keyset)
+    controllerWASD = Control(player_wasd_keyset)
+    controllerARROWS = Control(player_arrows_keyset)
     player1 = Player(controller = controllerWASD, nickname="PLayerWASD", color = (0, 0, 255))
     player2 = Player(controller = controllerARROWS, nickname="PLayerARROWS", color = (0, 128, 128))
 
