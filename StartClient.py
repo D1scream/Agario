@@ -1,5 +1,4 @@
 import asyncio
-import asyncio
 import random
 import websockets
 import json
@@ -11,7 +10,7 @@ from Client.Food import Food
 from Client.ControlledUnit import Controlled_Unit
 from Client.Controller import Controller, Keyset
 from Client.Unit import Unit
-from GlobalConstants import WIDTH, HEIGHT, score_to_speed
+from GlobalConstants import WIDTH, HEIGHT
 
 class WebSocketClient:
     def __init__(self, uri):
@@ -46,12 +45,11 @@ class WebSocketClient:
             except Exception as e:
                 print(f"Error receiving message: {e}")
 
-    async def send_message(self, json_message):
-        await self.websocket_.send(json_message)
+    async def send_message(self, message):
+        await self.websocket_.send(json.dumps(message))
 
     async def custom_send_message(self, message):
-        json_message = json.dumps(message)
-        await self.send_message( json_message)
+        await self.send_message(message)
 
 class Field:
     def __init__(self, WIDTH, HEIGHT, controller : Controller):
@@ -67,18 +65,17 @@ class Field:
         self.food_list = websocket.food_list
         self.player_list = []
         for unit in self.unit_list:
-            unit : Unit = unit
             if (unit.id_ == websocket.id_): 
                 player_unit = Controlled_Unit(controller=self.controller_,client=websocket)
 
-                player_unit.nickname = unit.nickname
+                player_unit.nickname_ = unit.nickname_
                 player_unit.color_ = unit.color_
                 player_unit.pos_.x = unit.pos_.x
                 player_unit.pos_.y = unit.pos_.y
                 player_unit.direction_.x = unit.direction_.x
                 player_unit.direction_.y = unit.direction_.y
-                player_unit.score = unit.score
-                player_unit.acceleration = unit.acceleration
+                player_unit.score_ = unit.score_
+                player_unit.acceleration = unit.acceleration_
                 player_unit.id_ = unit.id_
 
                 self.player_list.append(player_unit)
@@ -100,8 +97,7 @@ class Field:
 async def start_game(websocket):
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("ChunChunMaru Client 1")
-    clock = pygame.time.Clock()
+    pygame.display.set_caption("ChunChunMaru Client")
 
     player_wasd_keyset = Keyset(
             key_up = pygame.K_w,
@@ -133,7 +129,6 @@ async def main(webclient : WebSocketClient):
     await webclient.custom_send_message( {"new_player" : some_cool_nickname})
 
     receive_task = asyncio.create_task(webclient.receive_messages())
-
     start_game_task = asyncio.create_task(start_game(webclient))
 
     await asyncio.gather(receive_task, start_game_task)

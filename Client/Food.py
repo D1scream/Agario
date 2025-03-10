@@ -15,6 +15,6 @@ class Food:
     
     def check_eated(self, player : Controlled_Unit):
         if (self.x_ - player.pos_.x) ** 2 + (self.y_ - player.pos_.y) ** 2 < (self.radius_ + player.radius()*0.9) ** 2:
-            player.score+=50
+            player.score_+=50
             return True
         return False

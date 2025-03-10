@@ -12,25 +12,27 @@ class Controlled_Unit(Unit):
         self.client = client
 
     async def move(self):
-        keys = pygame.key.get_pressed()
-        direction = self.controller_.get_moving_vector(keys)
+        direction = self.get_direction_from_keys()
         self.direction_ = direction
-        await self.SendDirection(direction)
-
         if direction.length() > 0:
             direction = direction.normalize() * self.speed() 
         self.pos_ += direction
 
+        await self.SendDirection(direction)
+
+    def get_direction_from_keys(self):
+        keys = pygame.key.get_pressed()
+        return self.controller_.get_moving_vector(keys)
+    
     async def send_division(self):
         await self.client.custom_send_message({"direction" : [self.direction_.x, self.direction_.y], "division" : True})
 
     async def SendDirection(self, direction):
-            await self.client.custom_send_message( {"direction" : [direction.x,direction.y], "division": False })
+        await self.client.custom_send_message( {"direction" : [direction.x,direction.y], "division": False })
 
     async def division(self):
-        if self.score < 400 or self.division_ban_timer_!=0:
-            return  
-        await self.send_division()
+        if self.score_ >= 400 and self.division_ban_timer_ == 0:
+            await self.send_division()
 
     async def check_division(self):
         keys = pygame.key.get_pressed()
@@ -38,7 +40,7 @@ class Controlled_Unit(Unit):
             await self.division()
 
     def __str__(self):
-        return self.nickname
+        return self.nickname_
     
     async def update(self):
         self.acceleration = max(self.acceleration - (1 / 10), 1)

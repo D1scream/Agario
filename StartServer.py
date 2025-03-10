@@ -10,7 +10,7 @@ from Server.Player import Unit
 from GlobalConstants import WIDTH, HEIGHT
 
 
-class Field:
+class GameSession:
     def __init__(self, WIDTH, HEIGHT, FOOD_COUNT = 100):
         self.WIDTH_=WIDTH
         self.HEIGHT_=HEIGHT
@@ -92,7 +92,7 @@ class Field:
         
 
 async def create_field(clients):
-    field = Field(WIDTH,HEIGHT)
+    field = GameSession(WIDTH,HEIGHT)
     await asyncio.gather(
         *(field.add_new_player(client) for client in clients))
         
@@ -110,7 +110,7 @@ async def send_message_to_all(message):
     await asyncio.gather(
         *(send_message(client, message) for client in clients))
            
-async def send_game_state(field : Field):
+async def send_game_state(field : GameSession):
     players_data = PlayersListModel(field.players_list)
     food_data = FoodListModel(field.food_list)
     data = {"player_list": players_data.to_json(), "food_list": food_data.to_json()}
