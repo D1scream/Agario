@@ -1,5 +1,6 @@
 import asyncio
 import asyncio
+import random
 import websockets
 import json
 
@@ -128,7 +129,7 @@ async def start_game(websocket):
 async def main(webclient : WebSocketClient):
     await webclient.connect()
 
-    some_cool_nickname = "Nagibator228"
+    some_cool_nickname = f"Umgumpuk {random.randint(10,99)}"
     await webclient.custom_send_message( {"new_player" : some_cool_nickname})
 
     receive_task = asyncio.create_task(webclient.receive_messages())
