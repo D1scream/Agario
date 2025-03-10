@@ -4,11 +4,12 @@ import json
 from Models import FoodListModel,PlayersListModel
 import pygame
 import random
-import math
 
-from Food import Food
-from Player import Unit
+from Server.Food import Food
+from Server.Player import Unit
 from GlobalConstants import WIDTH, HEIGHT
+
+
 
 pygame.init()
 clock = pygame.time.Clock()
@@ -33,12 +34,14 @@ class Field:
 
         self.players_list = [player for player in self.players_list if player.id_ in id_players_dict]
 
+        
         #print(len(self.players_list), len(id_players_dict))
         for player in self.players_list:
             player : Unit = player
-            #print(len(id_players_dict[player.id_]))
+            #print()
             self.check_boundaries(player)
             self.check_food(player)
+
             for other_player in self.players_list:
                 other_player : Unit = other_player
 
@@ -57,7 +60,19 @@ class Field:
                         id_players_dict[part.id_].append(part)
                         print("divided",part.id_)
             player.update()
+
             
+    async def check_game_over(self):
+        for player_id in list(id_players_dict.keys()):  
+            if len(id_players_dict[player_id]) == 0:
+                client = next((k for k, v in clients_players_dict.items() if v == player_id), None)
+                if client:
+                    await send_message(client, {"game_over": True}) 
+                    print("game over sent to", player_id)
+                
+                id_players_dict.pop(player_id) 
+                await self.add_new_player(client)
+
     async def check_new_clients(self):
         for nc in clients:
             if nc not in clients_players_dict:
@@ -79,13 +94,22 @@ class Field:
             if(is_free_id):
                 print("free id is ", free_id)
                 break
+
         def generate_random_color(max_sum=600):
             while True:
                 color = (random.randint(50, 150), random.randint(50, 150), random.randint(50, 150))
                 if sum(color) <= max_sum:
                     return color
-                
-        player = Unit( nickname="unknown", color = generate_random_color(600), id = free_id)
+        if(client in client_nickname_dict):
+            nickname = client_nickname_dict[client]
+        else:
+            nickname = "uknown"
+        player = Unit( nickname=nickname, color = generate_random_color(600) ,id = free_id)
+        margin = 50
+        player.pos_ = pygame.math.Vector2(
+                random.randint(margin, WIDTH - margin),
+                random.randint(margin, HEIGHT - margin)
+            )
         self.players_list.append(player)
 
         if free_id not in id_players_dict:
@@ -130,8 +154,7 @@ async def send_message_to_all(message):
     except Exception as e:
         print(f"Error in send {e}")
     #await asyncio.sleep(1 / 60)
-
-async def send_game_state(field):
+async def send_game_state(field : Field):
     while True:
         # if len(field.players_list) == 1:
         #     field = await create_field(clients)
@@ -141,6 +164,7 @@ async def send_game_state(field):
         data = {"player_list": players_data.to_json(), "food_list": food_data.to_json()}
 
         await field.check_new_clients()
+        await field.check_game_over()
         #print(players_data.to_json())
         field.update()
         await send_message_to_all(data)
@@ -168,6 +192,7 @@ async def remove_player(websocket):
         
 
 id_players_dict = {}
+client_nickname_dict = {}
 async def echo(websocket, path=""):
     clients.add(websocket)
     try:
@@ -175,18 +200,23 @@ async def echo(websocket, path=""):
             try:
                 data = json.loads(message)
                 #print(data)
-                try:
-                    direction = data.get("direction") 
-                    division = data.get("division")
-                    if websocket in clients_players_dict:
-                        player_id = int(clients_players_dict[websocket])
-                        for player in id_players_dict[player_id]:
-                            player.load_data(direction, division)
-                    else:
-                        print(f"{websocket} WebSocket not found in clients_players_dict")
-                        
-                except Exception as e:
-                    print(f"Error: {e}")
+                if("new_player" in data):
+                    new_player_nickname = data.get("new_player")
+                    client_nickname_dict[websocket] = new_player_nickname
+                    print(new_player_nickname, " joined to circle party")
+                else:
+                    try:
+                        direction = data.get("direction") 
+                        division = data.get("division")
+                        if websocket in clients_players_dict:
+                            player_id = int(clients_players_dict[websocket])
+                            for player in id_players_dict[player_id]:
+                                player.load_data(direction, division)
+                        else:
+                            print(f"{websocket} WebSocket not found in clients_players_dict")
+                            
+                    except Exception as e:
+                        print(f"Error: {e}")
                 
             except json.JSONDecodeError:
                 await websocket.send('Error: Invalid JSON')

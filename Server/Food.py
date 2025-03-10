@@ -1,6 +1,6 @@
 import json
 import random
-from Player import Unit
+from Server.Player import Unit
 from GlobalConstants import WIDTH, HEIGHT
 class Food:
     def __init__(self):

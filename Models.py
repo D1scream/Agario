@@ -1,7 +1,7 @@
 import json
 from GlobalConstants import HEIGHT, WIDTH
-from Player import Unit
-from Food import Food
+from Server.Player import Unit
+from Server.Food import Food
 class FoodListModel:
     def __init__(self, food_list: list[Food]):
         self.food_list_ = food_list
