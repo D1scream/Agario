@@ -7,7 +7,7 @@ import random
 from Models import FoodListModel, PlayersListModel
 from Server.Food import Food
 from Server.Player import Unit
-from GlobalConstants import WIDTH, HEIGHT
+from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT
 
 
 class GameSession:
@@ -80,8 +80,8 @@ class GameSession:
 
         margin = 50
         player.pos_ = pygame.math.Vector2(
-                random.randint(margin, WIDTH - margin),
-                random.randint(margin, HEIGHT - margin))
+                random.randint(margin, FIELD_WIDTH - margin),
+                random.randint(margin, FIELD_HEIGHT - margin))
         
         self.players_list.append(player)
 
@@ -92,7 +92,7 @@ class GameSession:
         
 
 async def create_field(clients):
-    field = GameSession(WIDTH,HEIGHT)
+    field = GameSession(FIELD_WIDTH, FIELD_HEIGHT)
     await asyncio.gather(
         *(field.add_new_player(client) for client in clients))
         

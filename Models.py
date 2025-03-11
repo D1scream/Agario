@@ -1,5 +1,5 @@
 import json
-from GlobalConstants import HEIGHT, WIDTH
+from GlobalConstants import FIELD_HEIGHT, FIELD_WIDTH
 from Server.Player import Unit
 from Server.Food import Food
 class FoodListModel:

@@ -1,14 +1,14 @@
 import math
 import pygame
 
-from GlobalConstants import WIDTH, HEIGHT, MASS_FOR_EAT_PLAYER
+from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT, MASS_FOR_EAT_PLAYER
 class Unit:
     def __init__(self, nickname, color, id):
         self.direction_ = pygame.math.Vector2(0, 0)
         self.collision_active_timer_ = 1
         self.division_ban_timer_ = 0.01
         self.nickname = nickname
-        self.pos_ = pygame.math.Vector2(WIDTH // 2, HEIGHT // 2)
+        self.pos_ = pygame.math.Vector2(FIELD_WIDTH // 2, FIELD_HEIGHT // 2)
         self.score = 1000
         self.color_ = color
         self.acceleration = 1

@@ -1,11 +1,11 @@
 import json
 import random
 from Server.Player import Unit
-from GlobalConstants import WIDTH, HEIGHT
+from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT
 class Food:
     def __init__(self):
-        self.x_ = random.randint(10, WIDTH - 10)
-        self.y_ = random.randint(10, HEIGHT - 10)
+        self.x_ = random.randint(10, FIELD_WIDTH - 10)
+        self.y_ = random.randint(10, FIELD_HEIGHT - 10)
         self.radius_ = 5
         self.color_ = (255, 0, 0)
     

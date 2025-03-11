@@ -10,7 +10,7 @@ from Client.Food import Food
 from Client.ControlledUnit import Controlled_Unit
 from Client.Controller import Controller, Keyset
 from Client.Unit import Unit
-from GlobalConstants import WIDTH, HEIGHT
+from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT
 
 class WebSocketClient:
     def __init__(self, uri):
@@ -66,7 +66,7 @@ class Field:
         self.player_list = []
         for unit in self.unit_list:
             if (unit.id_ == websocket.id_): 
-                player_unit = Controlled_Unit(controller=self.controller_,client=websocket)
+                player_unit = Controlled_Unit(controller=self.controller_, client=websocket)
 
                 player_unit.nickname_ = unit.nickname_
                 player_unit.color_ = unit.color_
@@ -96,7 +96,7 @@ class Field:
 
 async def start_game(websocket):
     pygame.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     pygame.display.set_caption("ChunChunMaru Client")
 
     player_wasd_keyset = Keyset(
@@ -108,7 +108,7 @@ async def start_game(websocket):
             )
     
     controllerWASD = Controller(player_wasd_keyset)
-    field = Field(WIDTH,HEIGHT, controllerWASD )
+    field = Field(FIELD_WIDTH,FIELD_HEIGHT, controllerWASD )
     
     running = True
     while running:
