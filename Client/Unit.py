@@ -36,7 +36,7 @@ class Unit:
 
         def draw(self,screen):
             pygame.draw.circle(screen, self.color, (int(self.pos.x), int(self.pos.y)), self.get_radius())
-            font = pygame.font.Font(None, int(self.get_radius()*4/len(self.nickname))) 
+            font = pygame.font.Font(None, int(self.get_radius() * 4 / len(self.nickname))) 
             text_surface = font.render(self.nickname, True, (255, 255, 255))  
             text_rect = text_surface.get_rect(center=(int(self.pos.x), int(self.pos.y)))
             
@@ -44,5 +44,3 @@ class Unit:
         
         async def update(self):
             self.acceleration = max(self.acceleration - (1 / 10), 1)
-            self.collision_active_timer = max(0,self.collision_active_timer - (1/60))
-            self.division_ban_timer = max(0,self.division_ban_timer - (1/60))

@@ -42,10 +42,10 @@ class ControlledUnit(Unit):
         return self.controller_.get_moving_vector(keys)
     
     async def send_division(self):
-        await self.client.custom_send_message({"direction" : [self.direction_.x, self.direction_.y], "division" : True})
+        await self.client.custom_send_message({"direction": [self.direction_.x, self.direction_.y], "division": True})
 
     async def send_direction(self, direction):
-        await self.client.custom_send_message( {"direction" : [direction.x,direction.y], "division": False })
+        await self.client.custom_send_message( {"direction": [direction.x,direction.y], "division": False })
 
     async def division(self):
         if self.score >= 400 and self.division_ban_timer == 0:
@@ -53,14 +53,11 @@ class ControlledUnit(Unit):
 
     async def check_division(self):
         keys = pygame.key.get_pressed()
-        if(self.controller_.get_division(keys = keys)):
+        if(self.controller_.get_division(keys=keys)):
             await self.division()
 
     def __str__(self):
         return self.nickname
     
     async def update(self):
-        self.acceleration = max(self.acceleration - (1 / 10), 1)
-        self.collision_active_timer_ = max(0,self.collision_active_timer_ - (1/60))
-        self.division_ban_timer_ = max(0,self.division_ban_timer_ - (1/60))
         await self.move()

@@ -1,4 +1,4 @@
 python ./StartServer.py
 
 while True:
-  python ./StartClient.py
+    python ./StartClient.py

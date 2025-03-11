@@ -8,8 +8,8 @@ class WebSocketClient:
     def __init__(self, uri):
         self.uri = uri
         self.websocket = None
-        self.units_list = []
-        self.food_list = []
+        self.units_list: list[Unit] = []
+        self.food_list: list[Food] = []
         self.id = None
 
     async def connect(self):

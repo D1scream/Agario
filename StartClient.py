@@ -23,8 +23,8 @@ class Field:
         
     async def update(self, screen, websocket: WebSocketClient):
         self.unit_list: list[Unit] = websocket.units_list
-        self.food_list = websocket.food_list
-        self.player_list = []
+        self.food_list: list[Food] = websocket.food_list
+        self.player_list: list[ControlledUnit] = []
         for unit in self.unit_list:
             if (unit.id == websocket.id): 
                 player_unit = ControlledUnit(controller=self.controller, client=websocket)
@@ -51,7 +51,7 @@ class Field:
             unit.draw(screen)
             
             
-    def check_boundaries(self, unit : Unit):
+    def check_boundaries(self, unit: Unit):
         unit.pos.x = max(unit.get_radius(), min(self.WIDTH - unit.get_radius(), unit.pos.x))
         unit.pos.y = max(unit.get_radius(), min(self.HEIGHT - unit.get_radius(), unit.pos.y))
 
@@ -90,11 +90,11 @@ async def start_game(websocket):
         await asyncio.sleep(TICK_INTERVAL)
     pygame.quit()
 
-async def main(webclient : WebSocketClient):
+async def main(webclient: WebSocketClient):
     await webclient.connect()
 
     some_cool_nickname = f"Umgumpuk {random.randint(10,99)}"
-    await webclient.custom_send_message( {"new_player" : some_cool_nickname})
+    await webclient.custom_send_message( {"new_player": some_cool_nickname})
 
     receive_task = asyncio.create_task(webclient.receive_messages())
     start_game_task = asyncio.create_task(start_game(webclient))

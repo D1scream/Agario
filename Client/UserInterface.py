@@ -5,8 +5,8 @@ import pygame
 from GlobalConstants import WINDOW_WIDTH, WINDOW_HEIGHT
 class UserInterface:
     def __init__(self):
-        self.unit_list : list[Unit] = []
-        self.player_list : list[ControlledUnit] = []
+        self.unit_list: list[Unit] = []
+        self.player_list: list[ControlledUnit] = []
         self.score_font = pygame.font.SysFont("Arial", 30)  
 
     def draw(self, screen):
@@ -21,7 +21,7 @@ class UserInterface:
 
         y_offset = 10 
         for idx, (player_id, total_score) in enumerate(top_scores[:5]):
-            player : Unit = player_by_id.get(player_id, (120, 120, 120))
+            player: Unit = player_by_id.get(player_id, (120, 120, 120))
 
             score_text = f"{idx+1}. {player.nickname}: {int(total_score)}"
             score_surface = self.score_font.render(score_text, True, player.color) 

@@ -31,29 +31,29 @@ class Unit:
     def division(self, player_list):
         if self.score < 400 or self.division_ban_timer!=0:
             return  
-        part = Unit(self.nickname, self.color, id = self.id)
+        
+        part = Unit(self.nickname, self.color, id=self.id)
         
         part.score = self.score / 2
         self.score = self.score / 2
         direction = self.direction
         if direction.length() == 0:
-            direction = pygame.math.Vector2(1,1).normalize()
+            direction = pygame.math.Vector2(1, 1).normalize()
 
         part.pos = self.pos + direction * (self.get_radius() + part.get_radius() + 10)
  
         part.acceleration = 3  
         part.division_ban_timer = 1
         self.division_ban_timer = 1
-        self.collision_active_timer=1100000
+        self.collision_active_timer = 1100000
         player_list.append(part)
         return part
     
-
     def check_player_eat(self, player: 'Unit'):
-        mass_to_eat = MASS_FOR_EAT_PLAYER
+        score_to_eat = MASS_FOR_EAT_PLAYER
         if(player != self and player.id==self.id):
-            mass_to_eat = 1
-        if(self.score * mass_to_eat > player.score ):
+            score_to_eat = 1
+        if(self.score * score_to_eat > player.score ):
             distance = ((self.pos.x - player.pos.x)**2 + (self.pos.y - player.pos.y)**2)**0.5
             if(distance < self.get_radius()*0.8):
                 return True
@@ -79,13 +79,13 @@ class Unit:
         }
     
     def load_data(self, direction, division):
-        self.direction = pygame.math.Vector2(direction[0],direction[1])
+        self.direction = pygame.math.Vector2(direction[0], direction[1])
         if(not self.division_flag):
             self.division_flag = division
 
     def update(self):
         self.acceleration = max(self.acceleration - (1 / 10), 1)
-        self.collision_active_timer = max(0,self.collision_active_timer - (1/60))
-        self.division_ban_timer = max(0,self.division_ban_timer - (1/60))
+        self.collision_active_timer = max(0, self.collision_active_timer - (1/60))
+        self.division_ban_timer = max(0, self.division_ban_timer - (1/60))
         self.move()
         

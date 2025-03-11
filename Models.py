@@ -5,7 +5,7 @@ from Server.Food import Food
 class FoodListModel:
     def __init__(self, food_list: list[Food]):
         self.food_list = food_list
-
+        
     def to_json(self):
         return json.dumps([food.__dict__ for food in self.food_list])
 
@@ -34,7 +34,7 @@ class PlayersListModel:
     
 class User:
     def __init__(self, nickname):
-        self.nickname=nickname
+        self.nickname = nickname
         self.connection = None
 
     def serialize(self):

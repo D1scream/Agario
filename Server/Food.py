@@ -8,7 +8,7 @@ class Food:
         self.y = random.randint(10, FIELD_HEIGHT - 10)
         self.score = random.randint(10,15)
 
-        self.color = generate_random_color(min_sum=200,max_sum=600)
+        self.color = generate_random_color(min_sum=200, max_sum=600)
     
     @property
     def __dict__(self):

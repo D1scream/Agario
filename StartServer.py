@@ -11,14 +11,14 @@ from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT, TICK_INTERVAL, generate_r
 
 
 class Field:
-    def __init__(self, WIDTH, HEIGHT, FOOD_COUNT = 100):
-        self.WIDTH=WIDTH
-        self.HEIGHT=HEIGHT
-        self.players_list = []
+    def __init__(self, WIDTH, HEIGHT, FOOD_COUNT=100):
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
+        self.players_list: list[Unit] = []
         self.food_list = [Food() for _ in range(FOOD_COUNT)]
     
     def update(self):
-        self.players_list.sort(key = lambda player: player.score)
+        self.players_list.sort(key=lambda player: player.score)
         self.players_list: list[Unit]= [p for p in self.players_list if p.id in id_players_dict]
 
         for player in self.players_list:
@@ -33,7 +33,7 @@ class Field:
 
             if(player.division_flag):
                 player.division_flag = False
-                if len(id_players_dict[player.id])<16:
+                if len(id_players_dict[player.id]) < 16:
                     part = player.division(self.players_list)
                     if part:
                         id_players_dict[part.id].append(part)
@@ -43,8 +43,8 @@ class Field:
     def start_eat_food(self, player : Unit): 
         for food in self.food_list:
             distance = (food.x - player.pos.x) ** 2 + (food.y - player.pos.y) ** 2
-            if distance < player.get_radius()**2:
-                player.score+=food.score
+            if distance < player.get_radius() ** 2:
+                player.score += food.score
                 self.food_list.remove(food)
                 self.food_list.append(Food())
 
@@ -64,17 +64,15 @@ class Field:
         for client in new_clients:
             await self.add_new_player(client)
                 
-    def check_boundaries(self, player : Unit):
+    def check_boundaries(self, player: Unit):
         player.pos.x = max(player.get_radius(), min(self.WIDTH - player.get_radius(), player.pos.x))
         player.pos.y = max(player.get_radius(), min(self.HEIGHT - player.get_radius(), player.pos.y))
 
     async def add_new_player(self, client):
         free_id = next(i for i in range(1, 10000) if i not in id_players_dict)
-
-        
-            
+    
         nickname = client_nickname_dict.get(client, "unknown")
-        player = Unit( nickname=nickname, color = generate_random_color(min_sum=50,max_sum=600), id = free_id)
+        player = Unit( nickname=nickname, color=generate_random_color(min_sum=50, max_sum=600), id=free_id)
 
         margin = 50
         player.pos = pygame.math.Vector2(
@@ -89,7 +87,7 @@ class Field:
         
 
 async def create_field(clients):
-    foodCount = int(FIELD_HEIGHT*FIELD_WIDTH/50**2)
+    foodCount = int(FIELD_HEIGHT * FIELD_WIDTH / 50 ** 2)
     field = Field(FIELD_WIDTH, FIELD_HEIGHT, foodCount)
     await asyncio.gather(
         *(field.add_new_player(client) for client in clients))
@@ -111,7 +109,7 @@ async def send_message_to_all(message):
 async def send_game_state(field : Field):
     players_data = PlayersListModel(field.players_list)
     food_data = FoodListModel(field.food_list)
-    data = {"player_list": players_data.to_json(), "food_list": food_data.to_json()}
+    data = {"player_list" : players_data.to_json(), "food_list": food_data.to_json()}
 
     await field.check_new_clients()
     await field.check_game_over()
