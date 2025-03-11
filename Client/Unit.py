@@ -19,10 +19,10 @@ class Unit:
             self.acceleration_ = acceleration
             self.id_ = id
 
-        def speed(self):
+        def get_speed(self):
             return 20 / math.log(self.score_) * self.acceleration_
         
-        def radius(self):
+        def get_radius(self):
             return math.sqrt(self.score_)
 
         async def move(self):
@@ -33,8 +33,8 @@ class Unit:
             self.pos_ += direction
 
         def draw(self,screen):
-            pygame.draw.circle(screen, self.color_, (int(self.pos_.x), int(self.pos_.y)), self.radius())
-            font = pygame.font.Font(None, int(self.radius()*4/len(self.nickname_))) 
+            pygame.draw.circle(screen, self.color_, (int(self.pos_.x), int(self.pos_.y)), self.get_radius())
+            font = pygame.font.Font(None, int(self.get_radius()*4/len(self.nickname_))) 
             text_surface = font.render(self.nickname_, True, (255, 255, 255))  
             text_rect = text_surface.get_rect(center=(int(self.pos_.x), int(self.pos_.y)))
             

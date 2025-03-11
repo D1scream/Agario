@@ -15,16 +15,16 @@ class Unit:
         self.id_ = id
         self.division_flag = False
 
-    def speed(self):
+    def get_speed(self):
         return 20 / math.log(self.score) * self.acceleration
     
-    def radius(self):
+    def get_radius(self):
         return math.sqrt(self.score)
 
     def move(self):
         direction = self.direction_
         if direction.length() > 0:
-            direction = direction.normalize() * self.speed() 
+            direction = direction.normalize() * self.get_speed() 
 
         self.pos_ += direction
         
@@ -39,7 +39,7 @@ class Unit:
         if direction.length() == 0:
             direction = pygame.math.Vector2(1,1).normalize()
 
-        part.pos_ = self.pos_ + direction * (self.radius() + part.radius() + 10)
+        part.pos_ = self.pos_ + direction * (self.get_radius() + part.get_radius() + 10)
  
         part.acceleration = 3  
         part.division_ban_timer_ = 1
@@ -55,10 +55,9 @@ class Unit:
             mass_to_eat = 1
         if(self.score * mass_to_eat > player.score ):
             distance = ((self.pos_.x - player.pos_.x)**2 + (self.pos_.y - player.pos_.y)**2)**0.5
-            if(distance < self.radius()*0.8):
+            if(distance < self.get_radius()*0.8):
                 return True
         return False
-                
             
     def __str__(self):
         return self.nickname

@@ -12,13 +12,15 @@ class Controlled_Unit(Unit):
         self.client = client
 
     async def move(self):
+        
         direction = self.get_direction_from_keys()
+        await self.SendDirection(direction)
         self.direction_ = direction
         if direction.length() > 0:
-            direction = direction.normalize() * self.speed() 
+            direction = direction.normalize() * self.get_speed() 
         self.pos_ += direction
 
-        await self.SendDirection(direction)
+        
 
     def get_direction_from_keys(self):
         keys = pygame.key.get_pressed()

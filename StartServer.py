@@ -7,10 +7,10 @@ import random
 from Models import FoodListModel, PlayersListModel
 from Server.Food import Food
 from Server.Player import Unit
-from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT
+from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT, TICK_INTERVAL, generate_random_color
 
 
-class GameSession:
+class Field:
     def __init__(self, WIDTH, HEIGHT, FOOD_COUNT = 100):
         self.WIDTH_=WIDTH
         self.HEIGHT_=HEIGHT
@@ -18,12 +18,12 @@ class GameSession:
         self.food_list = [Food() for _ in range(FOOD_COUNT)]
     
     def update(self):
-        self.players_list.sort(key=lambda player: player.score)
+        self.players_list.sort(key = lambda player: player.score)
         self.players_list = [p for p in self.players_list if p.id_ in id_players_dict]
 
         for player in self.players_list:
             self.check_boundaries(player)
-            self.check_food(player)
+            self.start_eat_food(player)
 
             for other_player in self.players_list:
                 if(player.check_player_eat(other_player)):
@@ -40,9 +40,11 @@ class GameSession:
 
             player.update()
 
-    def check_food(self, player:Unit):
+    def start_eat_food(self, player : Unit): 
         for food in self.food_list:
-            if(food.check_eated(player)):
+            distance = (food.x_ - player.pos_.x) ** 2 + (food.y_ - player.pos_.y) ** 2
+            if distance < player.get_radius()**2:
+                player.score+=food.score_
                 self.food_list.remove(food)
                 self.food_list.append(Food())
 
@@ -62,21 +64,17 @@ class GameSession:
         for client in new_clients:
             await self.add_new_player(client)
                 
-    def check_boundaries(self, player):
-        player.pos_.x = max(player.radius(), min(self.WIDTH_ - player.radius(), player.pos_.x))
-        player.pos_.y = max(player.radius(), min(self.HEIGHT_ - player.radius(), player.pos_.y))
+    def check_boundaries(self, player : Unit):
+        player.pos_.x = max(player.get_radius(), min(self.WIDTH_ - player.get_radius(), player.pos_.x))
+        player.pos_.y = max(player.get_radius(), min(self.HEIGHT_ - player.get_radius(), player.pos_.y))
 
     async def add_new_player(self, client):
         free_id = next(i for i in range(1, 10000) if i not in id_players_dict)
 
-        def generate_random_color(max_sum=600):
-            while True:
-                color = (random.randint(50, 150), random.randint(50, 150), random.randint(50, 150))
-                if sum(color) <= max_sum:
-                    return color
-                
+        
+            
         nickname = client_nickname_dict.get(client, "unknown")
-        player = Unit( nickname=nickname, color = generate_random_color(600) ,id = free_id)
+        player = Unit( nickname=nickname, color = generate_random_color(min_sum=50,max_sum=600), id = free_id)
 
         margin = 50
         player.pos_ = pygame.math.Vector2(
@@ -84,7 +82,6 @@ class GameSession:
                 random.randint(margin, FIELD_HEIGHT - margin))
         
         self.players_list.append(player)
-
         id_players_dict.setdefault(free_id, []).append(player)
 
         clients_players_dict[client] = player.id_
@@ -92,7 +89,8 @@ class GameSession:
         
 
 async def create_field(clients):
-    field = GameSession(FIELD_WIDTH, FIELD_HEIGHT)
+    foodCount = int(FIELD_HEIGHT*FIELD_WIDTH/50**2)
+    field = Field(FIELD_WIDTH, FIELD_HEIGHT, foodCount)
     await asyncio.gather(
         *(field.add_new_player(client) for client in clients))
         
@@ -110,7 +108,7 @@ async def send_message_to_all(message):
     await asyncio.gather(
         *(send_message(client, message) for client in clients))
            
-async def send_game_state(field : GameSession):
+async def send_game_state(field : Field):
     players_data = PlayersListModel(field.players_list)
     food_data = FoodListModel(field.food_list)
     data = {"player_list": players_data.to_json(), "food_list": food_data.to_json()}
@@ -125,8 +123,9 @@ async def start_game():
     field = await create_field(clients)
     running = True
     while running:
-        await send_game_state(field)
-        await asyncio.sleep(1/60)
+        asyncio.create_task(send_game_state(field))
+        #await send_game_state(field)
+        await asyncio.sleep(TICK_INTERVAL)
         
 async def remove_player(websocket):
     clients.discard(websocket)
@@ -134,7 +133,6 @@ async def remove_player(websocket):
     player_id = clients_players_dict.pop(websocket, None)
     if player_id:
         id_players_dict.pop(player_id, None)
-
 
 clients_players_dict = {}
 clients = set()

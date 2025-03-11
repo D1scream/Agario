@@ -10,6 +10,7 @@ from Client.Food import Food
 from Client.ControlledUnit import Controlled_Unit
 from Client.Controller import Controller, Keyset
 from Client.Unit import Unit
+from Client.UserInterface import UserInterface
 from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT
 
 class WebSocketClient:
@@ -84,15 +85,17 @@ class Field:
                 
             self.check_boundaries(unit)
             for food in self.food_list:
-                if(food.check_eated(unit)):
-                    self.food_list.remove(food)
                 food.draw(screen)
+
             await unit.update()
             unit.draw(screen)
             
-    def check_boundaries(self, unit):
-        unit.pos_.x = max(unit.radius(), min(self.WIDTH_ - unit.radius(), unit.pos_.x))
-        unit.pos_.y = max(unit.radius(), min(self.HEIGHT_ - unit.radius(), unit.pos_.y))
+            
+    def check_boundaries(self, unit : Unit):
+        unit.pos_.x = max(unit.get_radius(), min(self.WIDTH_ - unit.get_radius(), unit.pos_.x))
+        unit.pos_.y = max(unit.get_radius(), min(self.HEIGHT_ - unit.get_radius(), unit.pos_.y))
+
+
 
 async def start_game(websocket):
     pygame.init()
@@ -109,12 +112,19 @@ async def start_game(websocket):
     
     controllerWASD = Controller(player_wasd_keyset)
     field = Field(FIELD_WIDTH,FIELD_HEIGHT, controllerWASD )
-    
+    UI = UserInterface()
     running = True
     while running:
         screen.fill((255, 255, 255))
-        await field.update(screen, websocket)
-        pygame.display.flip()
+        async def DrawGame():
+            await field.update(screen, websocket)
+            UI.unit_list=field.unit_list
+            UI.player_list = field.player_list
+            UI.draw(screen)
+            pygame.display.flip()
+
+        asyncio.create_task(DrawGame())
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
