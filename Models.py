@@ -4,10 +4,10 @@ from Server.Player import Unit
 from Server.Food import Food
 class FoodListModel:
     def __init__(self, food_list: list[Food]):
-        self.food_list_ = food_list
+        self.food_list = food_list
 
     def to_json(self):
-        return json.dumps([food.__dict__ for food in self.food_list_])
+        return json.dumps([food.__dict__ for food in self.food_list])
 
     @classmethod
     def from_json(cls, json_str: str, food_class):
@@ -19,10 +19,10 @@ class FoodListModel:
 
 class PlayersListModel:
     def __init__(self, players_list: list[Unit]):
-        self.players_list_ = players_list
+        self.players_list = players_list
 
     def to_json(self):
-        return json.dumps([player.__dict__ for player in self.players_list_])
+        return json.dumps([player.__dict__ for player in self.players_list])
 
     @classmethod
     def from_json(cls, json_str: str, player_class):

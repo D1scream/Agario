@@ -5,7 +5,7 @@ import json
 import pygame
 
 from Client.Food import Food
-from Client.ControlledUnit import Controlled_Unit
+from Client.ControlledUnit import ControlledUnit
 from Client.Controller import Controller, Keyset
 from Client.Unit import Unit
 from Client.UserInterface import UserInterface
@@ -13,31 +13,31 @@ from Client.WebSocketClient import WebSocketClient
 from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT, TICK_INTERVAL, WINDOW_WIDTH, WINDOW_HEIGHT
 
 class Field:
-    def __init__(self, WIDTH, HEIGHT, controller : Controller):
-        self.WIDTH_=WIDTH
-        self.HEIGHT_=HEIGHT
+    def __init__(self, WIDTH, HEIGHT, controller: Controller):
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
         self.unit_list = []
         self.food_list = []
         self.player_list = []
-        self.controller_ = controller
+        self.controller = controller
         
-    async def update(self, screen, websocket : WebSocketClient):
-        self.unit_list = websocket.units_list
+    async def update(self, screen, websocket: WebSocketClient):
+        self.unit_list: list[Unit] = websocket.units_list
         self.food_list = websocket.food_list
         self.player_list = []
         for unit in self.unit_list:
-            if (unit.id_ == websocket.id_): 
-                player_unit = Controlled_Unit(controller=self.controller_, client=websocket)
+            if (unit.id == websocket.id): 
+                player_unit = ControlledUnit(controller=self.controller, client=websocket)
 
-                player_unit.nickname_ = unit.nickname_
-                player_unit.color_ = unit.color_
-                player_unit.pos_.x = unit.pos_.x
-                player_unit.pos_.y = unit.pos_.y
-                player_unit.direction_.x = unit.direction_.x
-                player_unit.direction_.y = unit.direction_.y
-                player_unit.score_ = unit.score_
-                player_unit.acceleration = unit.acceleration_
-                player_unit.id_ = unit.id_
+                player_unit.nickname = unit.nickname
+                player_unit.color = unit.color
+                player_unit.pos.x = unit.pos.x
+                player_unit.pos.y = unit.pos.y
+                player_unit.direction.x = unit.direction.x
+                player_unit.direction.y = unit.direction.y
+                player_unit.score = unit.score
+                player_unit.acceleration = unit.acceleration
+                player_unit.id = unit.id
 
                 self.player_list.append(player_unit)
                 await player_unit.move()
@@ -52,8 +52,8 @@ class Field:
             
             
     def check_boundaries(self, unit : Unit):
-        unit.pos_.x = max(unit.get_radius(), min(self.WIDTH_ - unit.get_radius(), unit.pos_.x))
-        unit.pos_.y = max(unit.get_radius(), min(self.HEIGHT_ - unit.get_radius(), unit.pos_.y))
+        unit.pos.x = max(unit.get_radius(), min(self.WIDTH - unit.get_radius(), unit.pos.x))
+        unit.pos.y = max(unit.get_radius(), min(self.HEIGHT - unit.get_radius(), unit.pos.y))
 
 async def start_game(websocket):
     pygame.init()
