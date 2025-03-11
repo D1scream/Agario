@@ -2,55 +2,15 @@ import asyncio
 import random
 import websockets
 import json
-
 import pygame
-import math
 
 from Client.Food import Food
 from Client.ControlledUnit import Controlled_Unit
 from Client.Controller import Controller, Keyset
 from Client.Unit import Unit
 from Client.UserInterface import UserInterface
-from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT
-
-class WebSocketClient:
-    def __init__(self, uri):
-        self.uri = uri
-        self.websocket_ = None
-        self.units_list = []
-        self.food_list = []
-        self.id_ = None
-
-    async def connect(self):
-        self.websocket_ = await websockets.connect(self.uri)
-
-    async def receive_messages(self):
-        while True:
-            try:
-                response = await self.websocket_.recv()
-                data = json.loads(response)
-                from Models import PlayersListModel, FoodListModel
-                
-                if("player_id" in data):
-                    self.id_ = int(data["player_id"])
-                    print("my id is ", self.id_)
-                else:
-                    
-                    units = PlayersListModel.from_json(data["player_list"], Unit)
-                    food_list = FoodListModel.from_json(data["food_list"], Food)
-                    self.units_list = units.players_list_
-                    self.food_list = food_list.food_list_
-                    
-                    # print("Received food:", len(self.food_list))
-                    # print("Received player: ", len(self.units_list))
-            except Exception as e:
-                print(f"Error receiving message: {e}")
-
-    async def send_message(self, message):
-        await self.websocket_.send(json.dumps(message))
-
-    async def custom_send_message(self, message):
-        await self.send_message(message)
+from Client.WebSocketClient import WebSocketClient
+from GlobalConstants import FIELD_WIDTH, FIELD_HEIGHT, TICK_INTERVAL, WINDOW_WIDTH, WINDOW_HEIGHT
 
 class Field:
     def __init__(self, WIDTH, HEIGHT, controller : Controller):
@@ -95,8 +55,6 @@ class Field:
         unit.pos_.x = max(unit.get_radius(), min(self.WIDTH_ - unit.get_radius(), unit.pos_.x))
         unit.pos_.y = max(unit.get_radius(), min(self.HEIGHT_ - unit.get_radius(), unit.pos_.y))
 
-
-
 async def start_game(websocket):
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -111,7 +69,7 @@ async def start_game(websocket):
             )
     
     controllerWASD = Controller(player_wasd_keyset)
-    field = Field(FIELD_WIDTH,FIELD_HEIGHT, controllerWASD )
+    field = Field(FIELD_WIDTH, FIELD_HEIGHT, controllerWASD )
     UI = UserInterface()
     running = True
     while running:
@@ -129,7 +87,7 @@ async def start_game(websocket):
             if event.type == pygame.QUIT:
                 running = False
         
-        await asyncio.sleep(1/60)
+        await asyncio.sleep(TICK_INTERVAL)
     pygame.quit()
 
 async def main(webclient : WebSocketClient):

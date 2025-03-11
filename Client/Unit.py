@@ -1,7 +1,6 @@
 import math
 import pygame
 
-from GlobalConstants import score_to_speed
 
 
 class Unit:
@@ -19,17 +18,20 @@ class Unit:
             self.acceleration_ = acceleration
             self.id_ = id
 
-        def get_speed(self):
+        def speed(self):
             return 20 / math.log(self.score_) * self.acceleration_
         
         def get_radius(self):
             return math.sqrt(self.score_)
 
+        def speed(self):
+            return 20 / math.log(self.score_) * self.acceleration_
+
         async def move(self):
             direction = self.direction_
 
             if direction.length() > 0:
-                direction = direction.normalize() * score_to_speed() *self.acceleration_
+                direction = direction.normalize() * self.speed() *self.acceleration_
             self.pos_ += direction
 
         def draw(self,screen):

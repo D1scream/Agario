@@ -17,7 +17,7 @@ class Controlled_Unit(Unit):
         await self.SendDirection(direction)
         self.direction_ = direction
         if direction.length() > 0:
-            direction = direction.normalize() * self.get_speed() 
+            direction = direction.normalize() * self.speed() 
         self.pos_ += direction
 
         

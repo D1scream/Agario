@@ -119,7 +119,7 @@ async def send_game_state(field : Field):
     await send_message_to_all(data)
     
 async def start_game():
-    print("Game Started")
+    print("Server Started")
     field = await create_field(clients)
     running = True
     while running:

@@ -13,9 +13,6 @@ class Controller:
     def __init__(self, keyset : Keyset):
         self.keyset_ = keyset
 
-    def set_keyset(self, keyset : Keyset):
-        self.keyset_ = keyset
-
     def get_moving_vector(self,keys):
         direction = pygame.math.Vector2(0, 0)
 
